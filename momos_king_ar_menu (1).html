@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Momos King — AR Menu</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --yellow: #FFD600;
+    --yellow-bright: #FFE600;
+    --yellow-light: #FFF8CC;
+    --red: #8B0000;
+    --red-mid: #A00000;
+    --red-light: #B50000;
+    --bg: #FFD600;
+    --card-bg: #fff;
+    --border: rgba(139,0,0,0.18);
+    --border-strong: rgba(139,0,0,0.4);
+    --text: #1a0000;
+    --text-on-red: #FFD600;
+    --muted: rgba(80,0,0,0.55);
+    --scan: rgba(139,0,0,0.08);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* --- WAVY BG BLOB (mimics the image) --- */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; right: -5vw;
+    width: 38vw;
+    height: 100vh;
+    background: var(--red);
+    clip-path: polygon(
+      40% 0%, 100% 0%, 100% 100%, 40% 100%,
+      55% 88%, 35% 75%, 55% 62%, 32% 50%,
+      55% 38%, 35% 24%, 55% 12%
+    );
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.15;
+  }
+
+  /* --- GRID DOTS --- */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: radial-gradient(circle, rgba(139,0,0,0.12) 1px, transparent 1px);
+    background-size: 30px 30px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ======= HERO ======= */
+  .hero {
+    position: relative;
+    text-align: center;
+    padding: 56px 20px 36px;
+    z-index: 2;
+    background: var(--red);
+    clip-path: polygon(0 0, 100% 0, 100% 78%, 55% 88%, 45% 100%, 0 88%);
+    margin-bottom: 0;
+  }
+
+  .ar-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,214,0,0.15);
+    border: 1.5px solid rgba(255,214,0,0.5);
+    border-radius: 2px;
+    padding: 6px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--yellow);
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    animation: pulse-border 2s ease infinite;
+  }
+  .ar-badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #88ffcc;
+    animation: blink 1s ease infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  @keyframes pulse-border {
+    0%,100%{box-shadow:0 0 0 0 rgba(255,214,0,0.3)}
+    50%{box-shadow:0 0 0 6px rgba(255,214,0,0)}
+  }
+
+  .hero-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(2.2rem, 7vw, 5.5rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -1px;
+    color: var(--yellow);
+    text-shadow: 0 3px 20px rgba(0,0,0,0.3), 0 0 60px rgba(255,214,0,0.2);
+    animation: glitch 6s ease infinite;
+  }
+  .hero-title span {
+    display: block;
+    font-size: 0.42em;
+    letter-spacing: 8px;
+    color: rgba(255,214,0,0.65);
+    text-shadow: none;
+    margin-top: 6px;
+    font-weight: 400;
+  }
+  @keyframes glitch {
+    0%,90%,100%{transform:translate(0,0);filter:none}
+    92%{transform:translate(-2px,0);filter:hue-rotate(20deg)}
+    94%{transform:translate(2px,0);filter:hue-rotate(-20deg)}
+    96%{transform:translate(0,0);filter:none}
+  }
+
+  .hero-sub {
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: rgba(255,214,0,0.55);
+    font-family: 'Space Mono', monospace;
+    margin-top: 18px;
+    text-transform: uppercase;
+    padding-bottom: 50px;
+  }
+
+  /* HUD corners */
+  .hud-corner {
+    position: absolute;
+    width: 22px; height: 22px;
+    border-color: rgba(255,214,0,0.5);
+    border-style: solid;
+  }
+  .hud-tl { top:16px; left:16px; border-width:2px 0 0 2px; }
+  .hud-tr { top:16px; right:16px; border-width:2px 2px 0 0; }
+
+  /* ======= TAB NAV ======= */
+  .nav-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--red);
+    border-bottom: 3px solid var(--yellow);
+    box-shadow: 0 4px 20px rgba(139,0,0,0.25);
+  }
+  .nav-tabs {
+    display: flex;
+    overflow-x: auto;
+    max-width: 1100px;
+    margin: 0 auto;
+    scrollbar-width: none;
+    padding: 0 12px;
+  }
+  .nav-tabs::-webkit-scrollbar { display:none; }
+  .nav-tab {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    color: rgba(255,214,0,0.6);
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 16px 16px;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.25s;
+    white-space: nowrap;
+  }
+  .nav-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 8px; right: 8px;
+    height: 3px;
+    background: var(--yellow);
+    transform: scaleX(0);
+    transition: transform 0.25s;
+    border-radius: 2px 2px 0 0;
+  }
+  .nav-tab.active { color: var(--yellow); }
+  .nav-tab.active::after { transform: scaleX(1); }
+  .nav-tab:hover { color: var(--yellow-bright); }
+
+  /* ======= MAIN CONTENT ======= */
+  .content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 36px 20px 80px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ======= SECTION HEADER ======= */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+    font-weight: 900;
+    color: var(--red);
+  }
+  .section-line {
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(139,0,0,0.3), transparent);
+    border-radius: 2px;
+  }
+
+  /* ======= MENU GRID ======= */
+  .menu-section { display: none; }
+  .menu-section.active { display: block; }
+
+  .items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 14px;
+  }
+
+  /* ======= ITEM CARD ======= */
+  .item-card {
+    position: relative;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+    animation: fadeSlide 0.4s ease forwards;
+    opacity: 0;
+    box-shadow: 0 2px 12px rgba(139,0,0,0.07);
+  }
+  .item-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--red);
+    box-shadow: 0 8px 28px rgba(139,0,0,0.18);
+  }
+  .item-card:hover .card-glow { opacity: 1; }
+
+  @keyframes fadeSlide {
+    from { opacity:0; transform:translateY(18px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+  .item-card:nth-child(1){animation-delay:.05s}
+  .item-card:nth-child(2){animation-delay:.10s}
+  .item-card:nth-child(3){animation-delay:.15s}
+  .item-card:nth-child(4){animation-delay:.20s}
+  .item-card:nth-child(5){animation-delay:.25s}
+  .item-card:nth-child(6){animation-delay:.30s}
+  .item-card:nth-child(7){animation-delay:.35s}
+  .item-card:nth-child(8){animation-delay:.40s}
+
+  .card-glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(139,0,0,0.05) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  /* Top accent bar */
+  .card-accent {
+    height: 4px;
+    background: linear-gradient(90deg, var(--red), var(--red-light), var(--yellow));
+  }
+
+  .card-body { padding: 18px 18px 14px; }
+
+  /* AR tag */
+  .ar-tag {
+    position: absolute;
+    top: 14px; right: 14px;
+    background: var(--red);
+    border-radius: 2px;
+    padding: 3px 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--yellow);
+    text-transform: uppercase;
+  }
+
+  .card-emoji {
+    font-size: 2.6rem;
+    margin-bottom: 10px;
+    display: block;
+    filter: drop-shadow(0 3px 8px rgba(139,0,0,0.15));
+    transition: transform 0.3s;
+  }
+  .item-card:hover .card-emoji { transform: scale(1.15) rotate(-5deg); }
+
+  .card-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text);
+    letter-spacing: 0.3px;
+    margin-bottom: 5px;
+  }
+
+  .card-desc {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1.5px solid rgba(139,0,0,0.08);
+    padding-top: 12px;
+  }
+
+  .card-price {
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--red);
+  }
+
+  .add-btn {
+    background: var(--red);
+    color: var(--yellow);
+    border: none;
+    border-radius: 3px;
+    width: 32px; height: 32px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-family: monospace;
+    line-height: 1;
+  }
+  .add-btn:hover { background: var(--red-light); transform: scale(1.1); }
+  .add-btn.added { background: #007a3d; color: #fff; animation: addPop 0.3s ease; }
+  @keyframes addPop {
+    0%{transform:scale(1)} 50%{transform:scale(1.3)} 100%{transform:scale(1)}
+  }
+
+  /* ======= FEATURED CARD ======= */
+  .featured-card {
+    grid-column: span 2;
+    background: linear-gradient(135deg, #fff9e6, #fff);
+    border-color: rgba(139,0,0,0.35);
+  }
+  @media(max-width:600px){.featured-card{grid-column:span 1;}}
+
+  .featured-card .card-accent {
+    background: linear-gradient(90deg, var(--yellow), var(--red), var(--yellow));
+    height: 4px;
+  }
+  .featured-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--yellow);
+    border: 1.5px solid var(--red);
+    border-radius: 2px;
+    padding: 3px 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  .featured-badge::before { content: '★'; font-size: 10px; }
+
+  /* ======= FLOATING CART ======= */
+  .cart-btn {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    z-index: 200;
+    background: var(--red);
+    color: var(--yellow);
+    border: 2px solid var(--yellow);
+    border-radius: 4px;
+    padding: 13px 20px;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 24px rgba(139,0,0,0.35);
+    transition: all 0.3s;
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  .cart-btn.visible { transform: translateY(0); opacity: 1; }
+  .cart-btn:hover { background: var(--red-light); box-shadow: 0 6px 32px rgba(139,0,0,0.45); }
+  .cart-count {
+    background: var(--yellow);
+    color: var(--red);
+    border-radius: 2px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  /* ======= AR MODAL ======= */
+  .ar-modal {
+    display: none;
+    position: fixed; inset: 0;
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    background: rgba(80,0,0,0.7);
+    backdrop-filter: blur(8px);
+  }
+  .ar-modal.open { display: flex; }
+
+  .ar-panel {
+    position: relative;
+    width: min(520px, 92vw);
+    background: #fff;
+    border: 2px solid var(--red);
+    border-radius: 8px;
+    overflow: hidden;
+    animation: modalIn 0.35s cubic-bezier(.17,.67,.4,1.3);
+    box-shadow: 0 20px 60px rgba(139,0,0,0.3);
+  }
+  @keyframes modalIn {
+    from { transform:scale(0.85); opacity:0; }
+    to { transform:scale(1); opacity:1; }
+  }
+
+  .ar-panel-accent {
+    height: 5px;
+    background: linear-gradient(90deg, var(--red), var(--yellow), var(--red));
+  }
+
+  .ar-viewport {
+    height: 250px;
+    background: radial-gradient(ellipse at 50% 50%, rgba(255,214,0,0.18) 0%, rgba(139,0,0,0.08) 60%, transparent 100%),
+                var(--red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ar-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,214,0,0.25);
+    animation: spin linear infinite;
+  }
+  .ar-ring-1 { width:210px;height:210px; animation-duration:12s; }
+  .ar-ring-2 { width:150px;height:150px; border-style:dashed; animation-duration:8s; animation-direction:reverse; }
+  .ar-ring-3 { width:270px;height:270px; border-style:dashed; animation-duration:20s; opacity:0.4; }
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+  .crosshair { position:absolute; inset:0; pointer-events:none; }
+  .crosshair::before, .crosshair::after {
+    content:''; position:absolute; background:rgba(255,214,0,0.2);
+  }
+  .crosshair::before { width:100%; height:1px; top:50%; }
+  .crosshair::after { height:100%; width:1px; left:50%; }
+
+  .ar-food-emoji {
+    font-size: 5rem;
+    z-index: 2;
+    filter: drop-shadow(0 0 24px rgba(255,214,0,0.6));
+    animation: float 3s ease-in-out infinite;
+    position: relative;
+  }
+  @keyframes float {
+    0%,100%{transform:translateY(0) scale(1) rotate(-5deg)}
+    50%{transform:translateY(-14px) scale(1.05) rotate(5deg)}
+  }
+
+  .hud-line {
+    position: absolute;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: rgba(255,214,0,0.5);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .hud-tl-text { top:12px; left:12px; }
+  .hud-tr-text { top:12px; right:12px; text-align:right; }
+  .hud-bl-text { bottom:12px; left:12px; }
+  .hud-br-text { bottom:12px; right:12px; text-align:right; }
+
+  .scan-bar {
+    position:absolute; width:100%; height:2px;
+    background:linear-gradient(90deg,transparent,var(--yellow),transparent);
+    opacity:0.6;
+    animation:scanBar 3s ease-in-out infinite;
+  }
+  @keyframes scanBar {
+    0%{top:0;opacity:0} 10%{opacity:0.6} 90%{opacity:0.6} 100%{top:100%;opacity:0}
+  }
+
+  .ar-panel-body { padding: 22px 26px 26px; }
+
+  .ar-item-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--red);
+    margin-bottom: 6px;
+  }
+
+  .ar-item-meta {
+    display: flex; gap: 16px; margin-bottom: 18px; align-items: center;
+  }
+  .ar-price {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--red);
+  }
+  .ar-category {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .ar-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .ar-detail {
+    background: #fff8e1;
+    border: 1.5px solid rgba(139,0,0,0.12);
+    border-radius: 4px;
+    padding: 10px;
+    text-align: center;
+  }
+  .ar-detail-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .ar-detail-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--red);
+  }
+
+  .ar-actions { display: flex; gap: 10px; }
+
+  .btn-primary {
+    flex: 1;
+    background: var(--red);
+    color: var(--yellow);
+    border: none;
+    border-radius: 4px;
+    padding: 14px;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { background: var(--red-light); }
+
+  .btn-close {
+    background: none;
+    border: 1.5px solid rgba(139,0,0,0.25);
+    color: var(--muted);
+    border-radius: 4px;
+    padding: 14px 18px;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-close:hover { border-color: var(--red); color: var(--red); }
+
+  /* ======= CONTACT BAR ======= */
+  .contact-bar {
+    position: relative; z-index: 2;
+    background: var(--red);
+    padding: 22px 20px;
+    text-align: center;
+  }
+  .contact-inner {
+    max-width: 600px; margin: 0 auto;
+    display: flex; gap: 28px;
+    justify-content: center; align-items: center; flex-wrap: wrap;
+  }
+  .contact-item {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: rgba(255,214,0,0.65);
+  }
+  .contact-item strong { color: var(--yellow); }
+
+  @media(max-width:500px) {
+    .hero { padding: 36px 16px 28px; }
+    .ar-details { grid-template-columns: 1fr 1fr; }
+    .nav-tab { padding: 14px 12px; font-size: 8.5px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hud-corner hud-tl"></div>
+  <div class="hud-corner hud-tr"></div>
+
+  <div class="ar-badge">
+    <span class="dot"></span>
+    AR Menu — Live Experience
+  </div>
+
+  <h1 class="hero-title">
+    THE MOMOS KING
+    <span>Jaipur, Rajasthan</span>
+  </h1>
+
+  <p class="hero-sub">Tap any item to view in augmented reality</p>
+</header>
+
+<!-- NAV -->
+<nav class="nav-wrapper">
+  <div class="nav-tabs" id="navTabs"></div>
+</nav>
+
+<!-- CONTENT -->
+<main class="content" id="menuContent"></main>
+
+<!-- CART -->
+<button class="cart-btn" id="cartBtn">
+  <span>🛒 Order</span>
+  <span class="cart-count" id="cartCount">0</span>
+</button>
+
+<!-- AR MODAL -->
+<div class="ar-modal" id="arModal">
+  <div class="ar-panel">
+    <div class="ar-panel-accent"></div>
+    <div class="ar-viewport">
+      <div class="ar-ring ar-ring-3"></div>
+      <div class="ar-ring ar-ring-1"></div>
+      <div class="ar-ring ar-ring-2"></div>
+      <div class="crosshair"></div>
+      <div class="scan-bar"></div>
+      <span class="ar-food-emoji" id="modalEmoji">🥟</span>
+      <div class="hud-line hud-tl-text">AR.VIEW<br>ACTIVE</div>
+      <div class="hud-line hud-tr-text">SCAN<br>COMPLETE</div>
+      <div class="hud-line hud-bl-text" id="modalCat">MOMOS</div>
+      <div class="hud-line hud-br-text">3D.RENDER<br>v2.0</div>
+    </div>
+    <div class="ar-panel-body">
+      <div class="ar-item-name" id="modalName">Item</div>
+      <div class="ar-item-meta">
+        <div class="ar-price" id="modalPrice">₹0</div>
+        <div class="ar-category" id="modalCatLabel">Category</div>
+      </div>
+      <div class="ar-details" id="modalDetails"></div>
+      <div class="ar-actions">
+        <button class="btn-primary" id="modalAddBtn" onclick="modalAdd()">+ ADD TO ORDER</button>
+        <button class="btn-close" onclick="closeModal()">✕ CLOSE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT BAR -->
+<footer class="contact-bar">
+  <div class="contact-inner">
+    <div class="contact-item">📞 <strong>73406 00887</strong></div>
+    <div class="contact-item">📸 <strong>@the_momos.king</strong></div>
+    <div class="contact-item">📍 <strong>Jaipur, Rajasthan</strong></div>
+  </div>
+</footer>
+
+<script>
+const menuData = {
+  "Gravy Momos": {
+    emoji: "🍲",
+    items: [
+      { name: "Jaipur Gravy Momos", price: "₹140", emoji: "🍲", spice: "🌶🌶🌶", desc: "Local Jaipur spices, rich tomato gravy", details: ["Serves 1","Hot","8 pcs"] },
+      { name: "Nepali Style Gravy Momos", price: "₹150", emoji: "🥘", spice: "🌶🌶", desc: "Authentic Nepali preparation, sesame chutney", details: ["Serves 1","Medium","8 pcs"] },
+      { name: "Tandoori Gravy Momos", price: "₹180", emoji: "🔥", spice: "🌶🌶🌶", desc: "Tandoor-smoked, aromatic masala gravy", details: ["Serves 1","Smoky","6 pcs"] },
+      { name: "Afghani Malai Momos", price: "₹199", emoji: "🌿", spice: "🌶", desc: "Creamy malai base, mild Afghani spices", details: ["Serves 1","Mild","6 pcs"] },
+      { name: "Cheese Pizza Matka Momos", price: "₹250", emoji: "🫙", spice: "🌶🌶", featured: true, desc: "Served in a clay matka, melted cheese crust", details: ["Serves 1","Fusion","6 pcs"] },
+    ]
+  },
+  "Steamed": {
+    emoji: "♨️",
+    items: [
+      { name: "Veg Steamed Momos", price: "₹80", emoji: "♨️", spice: "🌶", desc: "Classic veg filling, steamed to perfection", details: ["Serves 1","Healthy","8 pcs"] },
+      { name: "Paneer Steamed Momos", price: "₹120", emoji: "🧀", spice: "🌶", desc: "Fresh paneer and herbs, light & delicious", details: ["Serves 1","Soft","8 pcs"] },
+      { name: "Cheese Corn Steamed Momos", price: "₹140", emoji: "🌽", spice: "🌶", desc: "Sweet corn + melted cheese stuffing", details: ["Serves 1","Creamy","8 pcs"] },
+    ]
+  },
+  "Fried Momos": {
+    emoji: "🍟",
+    items: [
+      { name: "Veg Fried Momos", price: "₹100", emoji: "🍟", spice: "🌶🌶", desc: "Crispy fried shell, crunchy outside soft inside", details: ["Serves 1","Crispy","8 pcs"] },
+      { name: "Paneer Fried Momos", price: "₹130", emoji: "🟨", spice: "🌶🌶", desc: "Paneer stuffed, golden fried to perfection", details: ["Serves 1","Golden","8 pcs"] },
+      { name: "Cheese Corn Fried Momos", price: "₹150", emoji: "🧀", spice: "🌶🌶", desc: "Fried momo with cheesy corn burst inside", details: ["Serves 1","Rich","8 pcs"] },
+    ]
+  },
+  "Kurkure Momos": {
+    emoji: "💥",
+    items: [
+      { name: "Veg Kurkure Momos", price: "₹140", emoji: "💥", spice: "🌶🌶🌶", desc: "Extra crunchy coating, spicy chaat masala", details: ["Serves 1","Crunch+","8 pcs"] },
+      { name: "Paneer Kurkure Momos", price: "₹150", emoji: "🔶", spice: "🌶🌶🌶", featured: true, desc: "Paneer filling in signature kurkure coating", details: ["Serves 1","Bestseller","8 pcs"] },
+      { name: "Cheese Corn Kurkure Momos", price: "₹199", emoji: "🧇", spice: "🌶🌶", desc: "Triple treat: cheese, corn, kurkure crunch", details: ["Serves 1","Premium","8 pcs"] },
+    ]
+  },
+  "Burgers": {
+    emoji: "🍔",
+    items: [
+      { name: "Veg Burger", price: "₹39", emoji: "🍔", spice: "🌶", desc: "Classic veg patty with fresh veggies", details: ["Serves 1","Fresh","1 pc"] },
+      { name: "Cheese Burger", price: "₹49", emoji: "🧀", spice: "🌶", desc: "Loaded with cheese slice, sauces and crunch", details: ["Serves 1","Cheesy","1 pc"] },
+      { name: "Kurkure Burger", price: "₹79", emoji: "💥", spice: "🌶🌶", desc: "Kurkure patty — crunch in every bite", details: ["Serves 1","Crunchy","1 pc"] },
+      { name: "King Special Burger", price: "₹99", emoji: "👑", spice: "🌶🌶🌶", featured: true, desc: "Our signature tower burger with special sauce", details: ["Serves 1","Signature","1 pc"] },
+    ]
+  },
+  "Rolls": {
+    emoji: "🌯",
+    items: [
+      { name: "Veg Roll", price: "₹69", emoji: "🌯", spice: "🌶", desc: "Fresh veggies, chutneys, wrapped tight", details: ["Serves 1","Fresh","1 pc"] },
+      { name: "Paneer Roll", price: "₹79", emoji: "🧀", spice: "🌶🌶", desc: "Tandoori paneer cubes in a crispy roll", details: ["Serves 1","Spicy","1 pc"] },
+      { name: "Spring Roll", price: "₹89", emoji: "🥢", spice: "🌶🌶", desc: "Crispy fried spring roll with schezwan dip", details: ["Serves 1","Crispy","2 pcs"] },
+      { name: "Kurkure Spring Roll", price: "₹129", emoji: "🔥", spice: "🌶🌶🌶", desc: "Extra crunchy kurkure-style spring roll", details: ["Serves 1","Premium","2 pcs"] },
+    ]
+  },
+  "Noodles": {
+    emoji: "🍜",
+    items: [
+      { name: "Veg Noodles", price: "₹59 / ₹99", emoji: "🍜", spice: "🌶🌶", desc: "Wok-tossed veg noodles, two portion sizes", details: ["1-2 pax","Wok","Small/Lg"] },
+      { name: "Hakka Noodles", price: "₹69 / ₹119", emoji: "🥡", spice: "🌶🌶🌶", desc: "Authentic Indo-Chinese Hakka style", details: ["1-2 pax","Authentic","Small/Lg"] },
+      { name: "King Special Noodles", price: "₹149", emoji: "👑", spice: "🌶🌶🌶", featured: true, desc: "House special noodles with secret sauce blend", details: ["Serves 2","Signature","Large"] },
+    ]
+  },
+  "Manchurian": {
+    emoji: "🥣",
+    items: [
+      { name: "Dry Manchurian", price: "₹99", emoji: "🥣", spice: "🌶🌶🌶", desc: "Crispy balls tossed in dry Manchurian sauce", details: ["Serves 1","Dry","8 pcs"] },
+      { name: "Gravy Manchurian", price: "₹129", emoji: "🍲", spice: "🌶🌶🌶", desc: "Soft Manchurian balls in thick brown gravy", details: ["Serves 1","Gravy","8 pcs"] },
+    ]
+  },
+  "Snacks": {
+    emoji: "🍟",
+    items: [
+      { name: "Masala Fries", price: "₹69", emoji: "🍟", spice: "🌶🌶", desc: "Crispy fries dusted in tangy chaat masala", details: ["Serves 1","Masala","Regular"] },
+      { name: "Cheese Loaded Fries", price: "₹99", emoji: "🧀", spice: "🌶", desc: "Golden fries smothered in melted cheese", details: ["Serves 1","Loaded","Large"] },
+      { name: "Chilli Potato", price: "₹99", emoji: "🌶", spice: "🌶🌶🌶", desc: "Crispy potato cubes in fiery chilli sauce", details: ["Serves 1","Hot","Regular"] },
+      { name: "Honey Chilli Potato", price: "₹129", emoji: "🍯", spice: "🌶🌶", featured: true, desc: "Sweet-spicy honey glaze on crispy potatoes", details: ["Serves 1","Sweet-Hot","Regular"] },
+      { name: "Veg Grilled Sandwich", price: "₹69", emoji: "🥪", spice: "🌶", desc: "Loaded grilled sandwich with fresh veggies", details: ["Serves 1","Grilled","1 pc"] },
+      { name: "Paneer Sandwich", price: "₹79", emoji: "🧇", spice: "🌶🌶", desc: "Paneer tikka filling in toasted bread", details: ["Serves 1","Toasted","1 pc"] },
+      { name: "King Special Sandwich", price: "₹99", emoji: "👑", spice: "🌶🌶🌶", desc: "Triple-decker with special King sauce", details: ["Serves 1","Premium","1 pc"] },
+    ]
+  },
+  "Chakhna & Chaat": {
+    emoji: "🍡",
+    items: [
+      { name: "Cocktail Chaat", price: "₹99", emoji: "🥗", spice: "🌶🌶", desc: "Mixed fruit & veggie chaat with tamarind", details: ["Serves 1","Tangy","Regular"] },
+      { name: "Kurkure MixVeg Chaat", price: "₹99", emoji: "💥", spice: "🌶🌶🌶", desc: "Crunchy mixed veg chaat with kurkure", details: ["Serves 1","Crunchy","Regular"] },
+      { name: "Veg Chaat", price: "₹99", emoji: "🫙", spice: "🌶🌶", desc: "Classic veg chaat with all the chutneys", details: ["Serves 1","Classic","Regular"] },
+      { name: "KFC Style Paneer Popcorn", price: "₹149", emoji: "🍗", spice: "🌶🌶🌶", featured: true, desc: "Bite-sized crispy paneer bites in KFC style coating", details: ["Serves 1","Crispy","Premium"] },
+    ]
+  },
+  "Kulhad Pizza": {
+    emoji: "🫙",
+    items: [
+      { name: "Small Kulhad Pizza", price: "₹139", emoji: "🫙", spice: "🌶🌶", desc: "Pizza served in an earthen kulhad, mini size", details: ["Serves 1","Clay Pot","Small"] },
+      { name: "Large Kulhad Pizza", price: "₹199", emoji: "🍕", spice: "🌶🌶", featured: true, desc: "Generous pizza in large clay pot, loaded topping", details: ["Serves 2","Clay Pot","Large"] },
+    ]
+  },
+  "Drinks": {
+    emoji: "🥤",
+    items: [
+      { name: "Cold Coffee (Small)", price: "₹59", emoji: "☕", spice: "—", desc: "Rich chilled coffee, sweet and refreshing", details: ["Serves 1","Cold","250ml"] },
+      { name: "Cold Coffee (Large)", price: "₹79", emoji: "🧋", spice: "—", desc: "Large chilled coffee with extra cream", details: ["Serves 1","Cold","400ml"] },
+      { name: "Cold Drink", price: "MRP", emoji: "🥤", spice: "—", desc: "Assorted cold drinks at MRP", details: ["Serves 1","Cold","Bottle"] },
+      { name: "Water Bottle", price: "MRP", emoji: "💧", spice: "—", desc: "Packaged drinking water at MRP", details: ["Serves 1","Still","500ml"] },
+    ]
+  }
+};
+
+let cart = 0;
+let currentModal = null;
+
+function buildMenu() {
+  const navTabs = document.getElementById('navTabs');
+  const content = document.getElementById('menuContent');
+  const categories = Object.keys(menuData);
+
+  categories.forEach((cat, i) => {
+    const tab = document.createElement('button');
+    tab.className = 'nav-tab' + (i === 0 ? ' active' : '');
+    tab.textContent = cat;
+    tab.dataset.cat = cat;
+    tab.addEventListener('click', () => switchTab(cat));
+    navTabs.appendChild(tab);
+
+    const section = document.createElement('div');
+    section.className = 'menu-section' + (i === 0 ? ' active' : '');
+    section.id = 'sec-' + cat;
+
+    section.innerHTML = `
+      <div class="section-header">
+        <div>
+          <div class="section-label">// ${String(i+1).padStart(2,'0')} — Category</div>
+          <div class="section-title">${menuData[cat].emoji} ${cat}</div>
+        </div>
+        <div class="section-line"></div>
+      </div>
+    `;
+
+    const grid = document.createElement('div');
+    grid.className = 'items-grid';
+
+    menuData[cat].items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'item-card' + (item.featured ? ' featured-card' : '');
+
+      card.innerHTML = `
+        <div class="card-accent"></div>
+        <div class="card-glow"></div>
+        <div class="card-body">
+          ${item.featured ? '<div class="featured-badge">Chef\'s Pick</div>' : ''}
+          <span class="card-emoji">${item.emoji}</span>
+          <div class="ar-tag">AR</div>
+          <div class="card-name">${item.name}</div>
+          <div class="card-desc">${item.desc} &nbsp; ${item.spice}</div>
+          <div class="card-footer">
+            <div class="card-price">${item.price}</div>
+            <button class="add-btn" onclick="addToCart(event, this)">+</button>
+          </div>
+        </div>
+      `;
+
+      card.addEventListener('click', (e) => {
+        if(e.target.classList.contains('add-btn')) return;
+        openModal(item, cat);
+      });
+
+      grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+    content.appendChild(section);
+  });
+}
+
+function switchTab(cat) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+  document.querySelectorAll('.menu-section').forEach(s => {
+    const isActive = s.id === 'sec-' + cat;
+    s.classList.toggle('active', isActive);
+    if(isActive) {
+      s.querySelectorAll('.item-card').forEach((c,i) => {
+        c.style.animation = 'none';
+        c.offsetHeight;
+        c.style.animation = '';
+        c.style.animationDelay = (0.05 * (i+1)) + 's';
+      });
+    }
+  });
+}
+
+function addToCart(e, btn) {
+  e.stopPropagation();
+  cart++;
+  updateCart();
+  btn.textContent = '✓';
+  btn.classList.add('added');
+  setTimeout(() => { btn.textContent = '+'; btn.classList.remove('added'); }, 1000);
+}
+
+function updateCart() {
+  document.getElementById('cartCount').textContent = cart;
+  document.getElementById('cartBtn').classList.toggle('visible', cart > 0);
+}
+
+function openModal(item, cat) {
+  currentModal = item;
+  document.getElementById('modalEmoji').textContent = item.emoji;
+  document.getElementById('modalName').textContent = item.name;
+  document.getElementById('modalPrice').textContent = item.price;
+  document.getElementById('modalCat').textContent = cat.toUpperCase();
+  document.getElementById('modalCatLabel').textContent = cat;
+
+  const labels = ['Serving','Type','Qty'];
+  document.getElementById('modalDetails').innerHTML =
+    (item.details || ['—','—','—']).map((d,i) =>
+      `<div class="ar-detail"><div class="ar-detail-label">${labels[i]}</div><div class="ar-detail-value">${d}</div></div>`
+    ).join('') +
+    `<div class="ar-detail"><div class="ar-detail-label">Spice</div><div class="ar-detail-value">${item.spice}</div></div>`;
+
+  document.getElementById('arModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('arModal').classList.remove('open');
+}
+
+function modalAdd() {
+  cart++;
+  updateCart();
+  const btn = document.getElementById('modalAddBtn');
+  btn.textContent = '✓ ADDED!';
+  btn.style.background = '#007a3d';
+  setTimeout(() => {
+    btn.textContent = '+ ADD TO ORDER';
+    btn.style.background = '';
+    closeModal();
+  }, 800);
+}
+
+document.getElementById('arModal').addEventListener('click', function(e) {
+  if(e.target === this) closeModal();
+});
+
+buildMenu();
+</script>
+</body>
+</html>
